@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Focus Timer App</title>
+<style>
+  /* ======= PAGE STYLING ======= */
+  body {
+    font-family: "Poppins", sans-serif;
+    background: linear-gradient(135deg, #8ec5fc, #e0c3fc);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+    color: #333;
+    text-align: center;
+    padding: 20px;
+  }
+
+  h1 {
+    margin-top: 30px;
+    font-size: 2.5rem;
+  }
+
+  /* Timer display */
+  .timer {
+    font-size: 3rem;
+    margin: 20px 0;
+  }
+
+  /* Input box for minutes */
+  input {
+    padding: 10px;
+    font-size: 1rem;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+    text-align: center;
+    width: 150px;
+  }
+
+  /* Buttons styling */
+  button {
+    margin: 10px;
+    padding: 10px 20px;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    background-color: #4a90e2;
+    color: white;
+    transition: 0.3s;
+  }
+
+  button:hover {
+    background-color: #357abd;
+  }
+
+  /* Motivational quotes styling */
+  .quotes {
+    margin-top: 20px;
+    font-style: italic;
+  }
+
+  /* Stats and rewards cards */
+  .stats, .rewards {
+    background: white;
+    border-radius: 15px;
+    padding: 15px;
+    margin: 15px 0;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    width: 90%;
+    max-width: 400px;
+  }
+
+  /* Garden for earned plants */
+  .garden {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .plant {
+    font-size: 2rem;
+  }
+</style>
+</head>
+<body>
+  <h1>🌱 Focus Timer App</h1>
+
+  <!-- Input for focus minutes -->
+  <p>Set your goal (minutes):</p>
+  <input type="number" id="focusInput" placeholder="Enter minutes" />
+
+  <!-- Start and Reset buttons -->
+  <div>
+    <button id="startBtn">Start Focus</button>
+    <button id="resetBtn">Reset</button>
+  </div>
+
+  <!-- Timer display -->
+  <div class="timer" id="timer">00:00</div>
+
+  <!-- Random motivational quote -->
+  <div class="quotes" id="quote"></div>
+
+  <!-- User progress stats -->
+  <div class="stats">
+    <h3>📊 Your Progress</h3>
+    <p>Total Focus Time: <span id="totalTime">0</span> mins</p>
+    <p>Current Streak: <span id="streak">0</span> days</p>
+  </div>
+
+  <!-- Focus garden rewards -->
+  <div class="rewards">
+    <h3>🌼 Your Focus Garden</h3>
+    <div class="garden" id="garden"></div>
+  </div>
+
+  <!-- Canvas for confetti -->
+  <canvas id="confettiCanvas"></canvas>
+
+  <!-- External confetti library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <script>
+    // ====== DOM ELEMENTS ======
+    const timerDisplay = document.getElementById("timer");
+    const totalTimeDisplay = document.getElementById("totalTime");
+    const streakDisplay = document.getElementById("streak");
+    const garden = document.getElementById("garden");
+    const quoteDisplay = document.getElementById("quote");
+
+    // ====== Motivational quotes ======
+    const quotes = [
+      "Stay focused — your future self will thank you!",
+      "Discipline beats motivation every time.",
+      "You are doing amazing — keep going!",
+      "Progress, not perfection.",
+      "Each minute focused is a seed planted for success."
+    ];
+
+    // ====== Timer and confetti variables ======
+    let countdown;            // Interval for countdown
+    let focusMinutes = 0;     // User input for focus duration
+    let confettiInstance = null;
+    let confettiInterval = null;
+
+    // ====== CONFETTI FUNCTIONS ======
+    function startConfetti() {
+      const canvas = document.getElementById("confettiCanvas");
+      const confetti = window.confetti.create(canvas, { resize: true });
+      confettiInstance = confetti;
+      // Launch confetti every 0.5 seconds
+      confettiInterval = setInterval(() => {
+        confetti({
+          particleCount: 50,
+          spread: 70,
+          origin: { y: 0.6 },
+        });
+      }, 500);
+    }
+
+    function stopConfetti() {
+      // Stop confetti animation and reset
+      if (confettiInterval) {
+        clearInterval(confettiInterval);
+        confettiInterval = null;
+      }
+      if (confettiInstance) confettiInstance.reset();
+    }
+
+    // ====== TIMER LOGIC ======
+    function startTimer() {
+      stopConfetti(); // Stop confetti if previously running
+      const input = document.getElementById("focusInput");
+      focusMinutes = parseInt(input.value);
+
+      // Validate input
+      if (isNaN(focusMinutes) || focusMinutes <= 0) return alert("Enter a valid number!");
+
+      let totalSeconds = focusMinutes * 60;
+
+      clearInterval(countdown); // Prevent multiple timers running simultaneously
+      countdown = setInterval(() => {
+        const mins = Math.floor(totalSeconds / 60);
+        const secs = totalSeconds % 60;
+        timerDisplay.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        totalSeconds--;
+
+        // Complete session when timer reaches zero
+        if (totalSeconds < 0) {
+          clearInterval(countdown);
+          sessionComplete();
+        }
+      }, 1000);
+    }
+
+    // ====== RESET TIMER ======
+    function resetTimer() {
+      clearInterval(countdown);          // Stop countdown
+      timerDisplay.textContent = "00:00"; // Reset display
+      stopConfetti();                     // Stop confetti if running
+    }
+
+    // ====== SESSION COMPLETION ======
+    function sessionComplete() {
+      startConfetti(); // Celebrate session completion
+
+      // Update total focus time
+      let total = parseInt(localStorage.getItem("totalTime")) || 0;
+      total += focusMinutes;
+      localStorage.setItem("totalTime", total);
+      totalTimeDisplay.textContent = total;
+
+      // Update streak
+      let streak = parseInt(localStorage.getItem("streak")) || 0;
+      streak++;
+      localStorage.setItem("streak", streak);
+      streakDisplay.textContent = streak;
+
+      // Add a new plant to garden
+      let plants = JSON.parse(localStorage.getItem("plants")) || [];
+      plants.push("🌱");
+      localStorage.setItem("plants", JSON.stringify(plants));
+      renderGarden();
+
+      // Show random motivational quote
+      quoteDisplay.textContent = quotes[Math.floor(Math.random() * quotes.length)];
+
+      // Play reward sound
+      const audio = new Audio("https://cdn.pixabay.com/download/audio/2023/03/06/audio_2be81b2192.mp3?filename=game-bonus-144751.mp3");
+      audio.play();
+    }
+
+    // ====== RENDER THE GARDEN ======
+    function renderGarden() {
+      const plants = JSON.parse(localStorage.getItem("plants")) || [];
+      garden.innerHTML = plants.map(p => `<span class="plant">${p}</span>`).join("");
+    }
+
+    // ====== LOAD SAVED PROGRESS ======
+    function loadProgress() {
+      totalTimeDisplay.textContent = localStorage.getItem("totalTime") || 0;
+      streakDisplay.textContent = localStorage.getItem("streak") || 0;
+      renderGarden();
+      quoteDisplay.textContent = quotes[Math.floor(Math.random() * quotes.length)];
+    }
+
+    // ====== BUTTON EVENT LISTENERS ======
+    document.getElementById("startBtn").addEventListener("click", startTimer);
+    document.getElementById("resetBtn").addEventListener("click", resetTimer);
+
+    // ====== INITIAL LOAD ======
+    loadProgress();
+  </script>
+</body>
+</html>
