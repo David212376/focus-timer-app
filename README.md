@@ -74,7 +74,7 @@ Focus-Timer-App/
 1. Download or clone the repository:
 
 ```bash
-git clone https://github.com/your-username/focus-timer-app.git
+git clone https://github.com/David212376/focus-timer-app.git
 ```
 
 2. Open `index.html` in your browser.
